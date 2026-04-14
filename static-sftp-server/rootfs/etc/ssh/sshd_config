@@ -1,0 +1,10 @@
+Port 2222
+Protocol 2
+PasswordAuthentication yes
+Subsystem sftp internal-sftp
+
+Match User *
+    ChrootDirectory /data
+    ForceCommand internal-sftp
+    AllowTcpForwarding no
+    X11Forwarding no

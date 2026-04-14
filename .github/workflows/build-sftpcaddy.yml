@@ -1,10 +1,10 @@
-name: Build Caddy Custom Image
+name: Build Custom Static Sftp + Caddy Image
 
 on:
   push:
     branches: ['main']
     paths:
-      - 'caddy/**'
+      - 'static-sftp-server/**'
   workflow_dispatch:
 
 jobs:
@@ -28,6 +28,6 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v7
         with:
-          context: ./caddy
+          context: ./static-sftp-server
           push: true
-          tags: ghcr.io/lukino2000/caddy:latest
+          tags: ghcr.io/lukino2000/sftpcaddy:latest
