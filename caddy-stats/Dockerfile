@@ -32,7 +32,7 @@ COPY --from=source /src/repo/package.json /src/repo/bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY --from=source /src/repo/receiver/ ./receiver/
-COPY --from=ui-build /app/receiver_ui/dist ./receiver_ui/dist
+COPY --from=ui-build /app/ui ./receiver_ui/dist
 COPY --from=source /src/repo/.env.example ./
 
 RUN mkdir -p /data /config
