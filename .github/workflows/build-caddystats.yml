@@ -1,10 +1,10 @@
-name: Build Caddy Custom Image
+name: Build Caddy Stats Custom Image
 
 on:
   push:
     branches: ['main']
     paths:
-      - 'caddy/**'
+      - 'caddy-stats/**'
   workflow_dispatch:
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/lukino2000/caddy
+          images: ghcr.io/lukino2000/caddy-stats
           tags: |
             type=raw,value=latest
             type=sha,format=short,prefix=sha-
@@ -37,7 +37,7 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v7
         with:
-          context: ./caddy
+          context: ./caddy-stats
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
