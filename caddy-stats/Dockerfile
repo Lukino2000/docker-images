@@ -1,7 +1,7 @@
 FROM oven/bun:1 AS source
 
 ARG REPO_URL=https://github.com/Lukino2000/caddy-stats.git
-ARG REPO_REF=50f682703a575f01062428f3c3b07adc1fe55477
+ARG REPO_REF
 
 WORKDIR /src
 
@@ -10,6 +10,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 RUN git clone "${REPO_URL}" /src/repo \
+  && test -n "${REPO_REF}" \
   && cd /src/repo \
   && git checkout --detach "${REPO_REF}" \
   && test "$(git rev-parse HEAD)" = "${REPO_REF}"

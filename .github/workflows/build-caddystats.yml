@@ -5,6 +5,8 @@ on:
     branches: ['main']
     paths:
       - 'caddy-stats/**'
+  schedule:
+    - cron: '17 3 * * *'
   workflow_dispatch:
 
 jobs:
@@ -25,6 +27,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Resolve upstream caddy-stats SHA
+        id: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          FULL_SHA="$(git ls-remote https://github.com/Lukino2000/caddy-stats.git HEAD | awk '{print $1}')"
+          SHORT_SHA="${FULL_SHA:0:12}"
+          echo "full_sha=${FULL_SHA}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if upstream image tag already exists
+        id: image_check
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="upstream-${{ steps.upstream.outputs.short_sha }}"
+          if docker manifest inspect "ghcr.io/lukino2000/caddy-stats:${TAG}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Image already published for ${TAG}; skipping scheduled rebuild."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No image found for ${TAG}; build will run."
+          fi
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -33,11 +59,15 @@ jobs:
           tags: |
             type=raw,value=latest
             type=sha,format=short,prefix=sha-
+            type=raw,value=upstream-${{ steps.upstream.outputs.short_sha }}
 
       - name: Build and Push
+        if: github.event_name != 'schedule' || steps.image_check.outputs.exists != 'true'
         uses: docker/build-push-action@v7
         with:
           context: ./caddy-stats
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            REPO_REF=${{ steps.upstream.outputs.full_sha }}
