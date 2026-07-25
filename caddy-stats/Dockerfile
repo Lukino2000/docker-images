@@ -1,7 +1,7 @@
 FROM oven/bun:1 AS source
 
 ARG REPO_URL=https://github.com/Lukino2000/caddy-stats.git
-ARG REPO_REF=4de2b261aceaec36cbe6f1c84bcb942ca5303665
+ARG REPO_REF=50f682703a575f01062428f3c3b07adc1fe55477
 
 WORKDIR /src
 
@@ -41,6 +41,8 @@ COPY --from=source /src/repo/receiver/config.json /config/config.json
 ENV CS_USEPG=0
 ENV CS_DATAFOLDER=/data
 ENV CS_CONFIGFOLDER=/config
+ENV CS_RECEIVER_HOST=0.0.0.0
+ENV CS_API_HOST=0.0.0.0
 ENV CS_UI_STATIC_ENABLED=1
 ENV CS_UI_STATICFOLDER=../receiver_ui/dist
 
