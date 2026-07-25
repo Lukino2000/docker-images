@@ -12,6 +12,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ghcr.io/lukino2000/caddy-stats
+      DOCKER_METADATA_SHORT_SHA_LENGTH: 12
     permissions:
       packages: write
       contents: read
@@ -37,32 +40,57 @@ jobs:
           echo "full_sha=${FULL_SHA}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Check if upstream image tag already exists
+      - name: Resolve current repo SHA
+        id: current
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHORT_SHA="${GITHUB_SHA:0:12}"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Check existing image tags
         id: image_check
         shell: bash
         run: |
           set -euo pipefail
-          TAG="upstream-${{ steps.upstream.outputs.short_sha }}"
-          if docker manifest inspect "ghcr.io/lukino2000/caddy-stats:${TAG}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Image already published for ${TAG}; skipping scheduled rebuild."
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "No image found for ${TAG}; build will run."
+          REPO_TAG="sha-${{ steps.current.outputs.short_sha }}"
+          UPSTREAM_TAG="upstream-${{ steps.upstream.outputs.short_sha }}"
+
+          REPO_EXISTS=false
+          UPSTREAM_EXISTS=false
+
+          if docker manifest inspect "${IMAGE_NAME}:${REPO_TAG}" >/dev/null 2>&1; then
+            REPO_EXISTS=true
           fi
+
+          if docker manifest inspect "${IMAGE_NAME}:${UPSTREAM_TAG}" >/dev/null 2>&1; then
+            UPSTREAM_EXISTS=true
+          fi
+
+          if [ "${REPO_EXISTS}" = "true" ] && [ "${UPSTREAM_EXISTS}" = "true" ]; then
+            SHOULD_BUILD=false
+            echo "Image already published for ${REPO_TAG} and ${UPSTREAM_TAG}; skipping build."
+          else
+            SHOULD_BUILD=true
+            echo "Missing image tag(s): repo=${REPO_EXISTS}, upstream=${UPSTREAM_EXISTS}; build will run."
+          fi
+
+          echo "repo_exists=${REPO_EXISTS}" >> "$GITHUB_OUTPUT"
+          echo "upstream_exists=${UPSTREAM_EXISTS}" >> "$GITHUB_OUTPUT"
+          echo "should_build=${SHOULD_BUILD}" >> "$GITHUB_OUTPUT"
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/lukino2000/caddy-stats
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
             type=sha,format=short,prefix=sha-
             type=raw,value=upstream-${{ steps.upstream.outputs.short_sha }}
 
       - name: Build and Push
-        if: github.event_name != 'schedule' || steps.image_check.outputs.exists != 'true'
+        if: steps.image_check.outputs.should_build == 'true'
         uses: docker/build-push-action@v7
         with:
           context: ./caddy-stats
