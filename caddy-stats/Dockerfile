@@ -1,7 +1,7 @@
 FROM oven/bun:1 AS source
 
 ARG REPO_URL=https://github.com/Lukino2000/caddy-stats.git
-ARG REPO_REF=146f842959ee95043ff16f838de076e0531eafca
+ARG REPO_REF=4de2b261aceaec36cbe6f1c84bcb942ca5303665
 
 WORKDIR /src
 
@@ -32,7 +32,7 @@ COPY --from=source /src/repo/package.json /src/repo/bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY --from=source /src/repo/receiver/ ./receiver/
-COPY --from=ui-build /app/ui ./receiver_ui/dist
+COPY --from=ui-build /app/receiver_ui/dist ./receiver_ui/dist
 COPY --from=source /src/repo/.env.example ./
 
 RUN mkdir -p /data /config
@@ -41,6 +41,8 @@ COPY --from=source /src/repo/receiver/config.json /config/config.json
 ENV CS_USEPG=0
 ENV CS_DATAFOLDER=/data
 ENV CS_CONFIGFOLDER=/config
+ENV CS_UI_STATIC_ENABLED=1
+ENV CS_UI_STATICFOLDER=../receiver_ui/dist
 
 VOLUME ["/data", "/config"]
 
